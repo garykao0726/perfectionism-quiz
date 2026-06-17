@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>頭家讀書會暖身：你的完美主義指數有多高？</title>
+<style>
+  :root {
+    --ink: #1f2421;
+    --paper: #faf7f2;
+    --accent: #a54a1a;
+    --accent-light: #e2ceb9;
+    --line: #ddd3c4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Noto Sans TC", "PingFang TC", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 22px; margin-bottom: 12px; }
+  .intro {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 28px;
+  }
+  .q {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .q p { font-size: 15px; margin: 0 0 14px; font-weight: 500; }
+  .scale {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .scale .label { font-size: 12px; color: #777; width: 64px; flex-shrink: 0; }
+  .scale .label.right { text-align: right; }
+  .options { display: flex; gap: 10px; flex: 1; justify-content: center; }
+  .options label {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 12px; color: #888; cursor: pointer;
+  }
+  .options input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  button#submitBtn {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button#submitBtn:disabled { background: #c9b7a6; cursor: not-allowed; }
+  #errorMsg { color: #b3261e; font-size: 13px; margin-top: 10px; display: none; }
+
+  #resultScreen { display: none; }
+  .result-card {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .result-card .score { font-size: 48px; font-weight: 800; font-family: "Space Mono", monospace; }
+  .result-card .score-label { font-size: 13px; opacity: .85; margin-top: 2px; }
+  .result-card .type { font-size: 20px; font-weight: 700; margin-top: 16px; }
+  .result-card .desc { font-size: 14px; opacity: .9; margin-top: 8px; }
+
+  .stats-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .stats-card h2 { font-size: 16px; margin: 0 0 14px; }
+  .stats-meta { font-size: 13px; color: #666; margin-bottom: 16px; }
+  .bar-row { margin-bottom: 10px; }
+  .bar-row .bar-label { font-size: 12px; color: #444; display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .bar-track { background: var(--accent-light); border-radius: 6px; height: 10px; overflow: hidden; }
+  .bar-fill { background: var(--accent); height: 100%; border-radius: 6px; transition: width .4s ease; }
+  .bar-fill.me { background: var(--ink); }
+  #refreshStats { display: block; margin: 16px auto 0; background: none; border: 1px solid var(--line); border-radius: 8px; padding: 8px 16px; font-size: 13px; color: #555; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="quizScreen">
+    <h1>頭家讀書會暖身：你的完美主義指數有多高？</h1>
+    <div class="intro">
+      歡迎來到本次的頭家讀書會！在我們深入探討《如何成為不完美主義者》之前，想邀請各位頭家花兩分鐘做個簡單的自我測驗。本問卷為完全匿名，不需要填寫姓名。送出後的整體數據，將作為我們今天讀書會交流與討論的有趣素材，請憑第一直覺放心作答！<br><br>
+      【作答說明】請針對以下 10 個情境為自己打分：1 分 ＝ 我完全不同意；5 分 ＝ 我完全同意。
+    </div>
+
+    <form id="quizForm"></form>
+
+    <button id="submitBtn" disabled>送出，看我的結果</button>
+    <div id="errorMsg">麻煩把 10 題都選完才能送出喔！</div>
+  </div>
+
+  <div id="resultScreen">
+    <div class="result-card">
+      <div class="score" id="myScore">--</div>
+      <div class="score-label">總分（10–50 分）</div>
+      <div class="type" id="myType">--</div>
+      <div class="desc" id="myDesc">--</div>
+    </div>
+
+    <div class="stats-card">
+      <h2>大家的結果</h2>
+      <div class="stats-meta" id="statsMeta">載入中...</div>
+      <div id="statsBars"></div>
+      <button id="refreshStats">重新整理統計</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxh31qdUxajfxQZlVbX03Q0rcSoiHcSMI7oYz_bq0nPKPJ9XHSNLHW5njOEniEvu3IC/exec";
+
+const QUESTIONS = [
+  "開始一項新計畫，我必須等到完美的時機，或自己準備到完美的狀態，才願意展開行動。",
+  "除非做到百分之百的好，否則其他的成果對我來說都算是失敗。",
+  "面對過去犯下的小錯誤，我經常花費大量時間在腦海中重播懊悔的場景，很難快速放下。",
+  "我需要獲得別人的讚美與認可，如果沒有外在的肯定，很難對自己當下的努力感到滿意。",
+  "我常因為害怕做出不完美的選擇，而花費大量時間比較，導致最後拖延或是什麼都沒做。",
+  "我常常覺得自己只是運氣好，暗自擔心別人發現我其實沒那麼優秀。",
+  "我常常因為害怕一開始就做不好，而選擇不斷拖延，甚至乾脆放棄不開始。",
+  "我很難看見自己微小的進步，總是只盯著最終那個巨大的完美目標。",
+  "我寧可打安全牌、不冒險，這樣結果不如預期時，我也能找到失敗的藉口。",
+  "在人際互動中，我會努力表現出親切隨和、滿足的對方期望，深怕不受人喜歡。"
+];
+
+const CATEGORIES = [
+  { min: 43, max: 50, name: "停滯不前的完美囚徒", desc: "常被選擇癱瘓困住，害怕失敗而乾脆不開始" },
+  { min: 35, max: 42, name: "過度驅動的焦慮追夢人", desc: "永遠對自己不滿意，常覺得自己是僥倖過關的冒牌者" },
+  { min: 27, max: 34, name: "偶爾卡關的條件限定者", desc: "平時正常，但面對某些在意的事會執著於必須「條件完美」才行動" },
+  { min: 19, max: 26, name: "擁抱微小進步的實踐家", desc: "明白行動比停滯有力量，出錯時能較快調整步伐" },
+  { min: 10, max: 18, name: "自由奔放的不完美主義者", desc: "追求卓越但不強求完美，重視「去做」而不是「做好」" }
+];
+
+function categoryOf(score) {
+  return CATEGORIES.find(c => score >= c.min && score <= c.max) || CATEGORIES[CATEGORIES.length - 1];
+}
+
+const form = document.getElementById('quizForm');
+QUESTIONS.forEach((text, i) => {
+  const div = document.createElement('div');
+  div.className = 'q';
+  div.innerHTML = `
+    <p>${i + 1}. ${text}</p>
+    <div class="scale">
+      <div class="label">我完全不同意</div>
+      <div class="options">
+        ${[1,2,3,4,5].map(v => `
+          <label>
+            <input type="radio" name="q${i}" value="${v}">
+            ${v}
+          </label>
+        `).join('')}
+      </div>
+      <div class="label right">我完全同意</div>
+    </div>
+  `;
+  form.appendChild(div);
+});
+
+const submitBtn = document.getElementById('submitBtn');
+form.addEventListener('change', () => {
+  const answered = QUESTIONS.every((_, i) => form.querySelector(`input[name="q${i}"]:checked`));
+  submitBtn.disabled = !answered;
+});
+
+submitBtn.addEventListener('click', async () => {
+  const answers = QUESTIONS.map((_, i) => Number(form.querySelector(`input[name="q${i}"]:checked`).value));
+  submitBtn.disabled = true;
+  submitBtn.textContent = "送出中...";
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ answers })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showResult(data);
+  } catch (err) {
+    const cat = categoryOf(answers.reduce((a,b) => a+b, 0));
+    showResult({ score: answers.reduce((a,b) => a+b, 0), category: cat.name, desc: cat.desc, stats: null });
+    console.error(err);
+  }
+});
+
+function showResult(data) {
+  document.getElementById('quizScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'block';
+  document.getElementById('myScore').textContent = data.score;
+  document.getElementById('myType').textContent = data.category;
+  document.getElementById('myDesc').textContent = data.desc;
+  if (data.stats) renderStats(data.stats, data.category);
+  else document.getElementById('statsMeta').textContent = '統計暫時無法載入';
+}
+
+function renderStats(stats, myCategory) {
+  document.getElementById('statsMeta').textContent = `已有 ${stats.count} 人填寫，平均分數 ${stats.average} 分`;
+  const max = Math.max(1, ...stats.distribution.map(d => d.count));
+  document.getElementById('statsBars').innerHTML = stats.distribution.map(d => `
+    <div class="bar-row">
+      <div class="bar-label"><span>${d.name}${d.name === myCategory ? '（你在這裡）' : ''}</span><span>${d.count} 人</span></div>
+      <div class="bar-track"><div class="bar-fill ${d.name === myCategory ? 'me' : ''}" style="width:${(d.count/max*100)}%"></div></div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('refreshStats').addEventListener('click', async () => {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    renderStats(data.stats, document.getElementById('myType').textContent);
+  } catch (err) { console.error(err); }
+});
+</script>
+</body>
+</html>

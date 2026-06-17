@@ -117,7 +117,7 @@
   <div id="resultScreen">
     <div class="result-card">
       <div class="score" id="myScore">--</div>
-      <div class="score-label">總分（10–50 分）</div>
+      <div class="score-label">完美主義指數（0–100%）</div>
       <div class="type" id="myType">--</div>
       <div class="desc" id="myDesc">--</div>
     </div>
@@ -208,10 +208,14 @@ submitBtn.addEventListener('click', async () => {
   }
 });
 
+function toPercent(rawScore) {
+  return Math.round((rawScore - 10) / 40 * 100);
+}
+
 function showResult(data) {
   document.getElementById('quizScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'block';
-  document.getElementById('myScore').textContent = data.score;
+  document.getElementById('myScore').textContent = toPercent(data.score) + '%';
   document.getElementById('myType').textContent = data.category;
   document.getElementById('myDesc').textContent = data.desc;
   if (data.stats) renderStats(data.stats, data.category);
@@ -219,7 +223,7 @@ function showResult(data) {
 }
 
 function renderStats(stats, myCategory) {
-  document.getElementById('statsMeta').textContent = `已有 ${stats.count} 人填寫，平均分數 ${stats.average} 分`;
+  document.getElementById('statsMeta').textContent = `已有 ${stats.count} 人填寫，平均完美主義指數 ${toPercent(stats.average)}%`;
   const max = Math.max(1, ...stats.distribution.map(d => d.count));
   document.getElementById('statsBars').innerHTML = stats.distribution.map(d => `
     <div class="bar-row">

@@ -80,7 +80,8 @@
   .result-card .score { font-size: 48px; font-weight: 800; font-family: "Space Mono", monospace; }
   .result-card .score-label { font-size: 13px; opacity: .85; margin-top: 2px; }
   .result-card .type { font-size: 20px; font-weight: 700; margin-top: 16px; }
-  .result-card .desc { font-size: 14px; opacity: .9; margin-top: 8px; }
+  .result-card .animal { font-size: 14px; font-weight: 600; opacity: .95; margin-top: 6px; }
+  .result-card .desc { font-size: 14px; opacity: .9; margin-top: 10px; line-height: 1.7; text-align: left; }
 
   .stats-card {
     background: #fff;
@@ -120,6 +121,7 @@
       <div class="score" id="myScore">--</div>
       <div class="score-label">完美主義指數（0–100%）</div>
       <div class="type" id="myType">--</div>
+      <div class="animal" id="myAnimal">--</div>
       <div class="desc" id="myDesc">--</div>
     </div>
 
@@ -150,11 +152,16 @@ const QUESTIONS = [
 ];
 
 const CATEGORIES = [
-  { min: 43, max: 50, name: "停滯不前的完美囚徒 🐢", desc: "常被選擇癱瘓困住，害怕失敗而乾脆不開始" },
-  { min: 35, max: 42, name: "永遠嫌不夠的焦慮跑者 🐹", desc: "永遠對自己不滿意，常覺得自己是僥倖過關的冒牌者" },
-  { min: 27, max: 34, name: "偶爾卡關的條件控 🐈", desc: "平時正常，但面對某些在意的事會執著於必須「條件完美」才行動" },
-  { min: 19, max: 26, name: "擁抱微小進步的實踐家 🐜", desc: "明白行動比停滯有力量，出錯時能較快調整步伐" },
-  { min: 10, max: 18, name: "自由奔放的不完美主義者 🦮", desc: "追求卓越但不強求完美，重視「去做」而不是「做好」" }
+  { min: 43, max: 50, name: "停滯不前的完美囚徒 🐢", animal: "烏龜", desc: "常被選擇癱瘓困住，害怕失敗而乾脆不開始",
+    detail: "常被選擇癱瘓困住，害怕失敗而乾脆不開始。書中提到，完美主義有時就像是「扛一副過重的盾牌而無法前進」；烏龜堅硬的外殼，正像是完美主義者為自己打造的「防空洞」。因為害怕一開始就失敗，或者過度思考導致選擇癱瘓，遇到挑戰的第一反應就是把頭縮回殼裡，留在舒適圈不冒險——而最糟糕的決定，往往就是「不行動」。" },
+  { min: 35, max: 42, name: "永遠嫌不夠的焦慮跑者 🐹", animal: "滾輪上的倉鼠", desc: "永遠對自己不滿意，常覺得自己是僥倖過關的冒牌者",
+    detail: "永遠對自己不滿意，常覺得自己是僥倖過關的冒牌者。這種人永遠處於過度驅動的狀態，腦中不停反思，充斥著「我本來應該可以做得更好」的念頭。就像在滾輪上狂奔的倉鼠，即使跑得再快、表現得再好，因為內心只接受「百分之百的完美」，所以永遠覺得自己還沒抵達終點，甚至把成功當作僥倖（冒牌者症候群），在焦慮中不斷消耗動能。" },
+  { min: 27, max: 34, name: "偶爾卡關的條件控 🐈", animal: "挑剔的貓咪", desc: "平時正常，但面對某些在意的事會執著於必須「條件完美」才行動",
+    detail: "平時正常，但面對某些在意的事會執著於必須「條件完美」才行動。貓咪能力很強，但只要罐頭口味不對、貓砂盆位置不好，牠們寧可罷工。這類人就像貓咪一樣，平時表現正常，但在某些事情上非常執著於外在條件——如同打算運動卻覺得音樂不夠好、運動服不合適、時間不完美，結果什麼也沒開始。他們必須等待「萬事俱備」，否則就不願意跨出第一步。" },
+  { min: 19, max: 26, name: "擁抱微小進步的實踐家 🐜", animal: "勤奮的螞蟻", desc: "明白行動比停滯有力量，出錯時能較快調整步伐",
+    detail: "明白行動比停滯有力量，出錯時能較快調整步伐。螞蟻不會想著一次搬動整座大山，而是專注於眼前的碎屑，慢慢累積——這正呼應了「微習慣」的核心策略：把目標設定到小到不可能失敗（例如每天只做一個伏地挺身）。他們深知每一次的微小前進都算數，這些看似微不足道的行動，經過時間累積與複利效應，最終會滾出巨大的能量與實質的進展。" },
+  { min: 10, max: 18, name: "自由奔放的不完美主義者 🦮", animal: "快樂的黃金獵犬", desc: "追求卓越但不強求完美，重視「去做」而不是「做好」",
+    detail: "追求卓越但不強求完美，重視「去做」而不是「做好」。黃金獵犬為了接住飛盤，會毫不猶豫地撲進泥巴坑，牠們不在乎弄髒毛髮，只在乎享受遊戲的過程——這完美詮釋了「不完美主義就是自由」的心態。當注意力放在體驗與學習上時，壓力就會轉化為一種遊戲，他們把錯誤視為指南針，不怕犯錯，勇敢且自由地享受行動帶來的樂趣。" }
 ];
 
 function categoryOf(score) {
@@ -217,8 +224,10 @@ function showResult(data) {
   document.getElementById('quizScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'block';
   document.getElementById('myScore').textContent = toPercent(data.score) + '%';
+  const cat = CATEGORIES.find(c => c.name === data.category);
   document.getElementById('myType').textContent = data.category;
-  document.getElementById('myDesc').textContent = data.desc;
+  document.getElementById('myAnimal').textContent = cat ? `代表動物：${cat.animal}` : '';
+  document.getElementById('myDesc').textContent = cat ? cat.detail : data.desc;
   if (data.stats) renderStats(data.stats, data.category);
   else document.getElementById('statsMeta').textContent = '統計暫時無法載入';
 }

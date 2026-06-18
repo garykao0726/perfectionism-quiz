@@ -80,7 +80,8 @@
   .result-card .score { font-size: 48px; font-weight: 800; font-family: "Space Mono", monospace; }
   .result-card .score-label { font-size: 13px; opacity: .85; margin-top: 2px; }
   .result-card .type { font-size: 20px; font-weight: 700; margin-top: 16px; }
-  .result-card .animal { font-size: 14px; font-weight: 600; opacity: .95; margin-top: 6px; }
+  .result-card .short-desc { font-size: 14px; opacity: .9; margin-top: 8px; }
+  .result-card .animal { font-size: 14px; font-weight: 600; opacity: .95; margin-top: 10px; }
   .result-card .desc { font-size: 14px; opacity: .9; margin-top: 10px; line-height: 1.7; text-align: left; }
 
   .stats-card {
@@ -121,6 +122,7 @@
       <div class="score" id="myScore">--</div>
       <div class="score-label">完美主義指數（0–100%）</div>
       <div class="type" id="myType">--</div>
+      <div class="short-desc" id="myShortDesc">--</div>
       <div class="animal" id="myAnimal">--</div>
       <div class="desc" id="myDesc">--</div>
     </div>
@@ -226,6 +228,7 @@ function showResult(data) {
   document.getElementById('myScore').textContent = toPercent(data.score) + '%';
   const cat = CATEGORIES.find(c => c.name === data.category);
   document.getElementById('myType').textContent = data.category;
+  document.getElementById('myShortDesc').textContent = cat ? cat.desc : data.desc;
   document.getElementById('myAnimal').textContent = cat ? `代表動物：${cat.animal}` : '';
   document.getElementById('myDesc').textContent = cat ? cat.detail : data.desc;
   if (data.stats) renderStats(data.stats, data.category);

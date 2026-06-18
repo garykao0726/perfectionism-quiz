@@ -90,8 +90,9 @@
   }
   .stats-card h2 { font-size: 16px; margin: 0 0 14px; }
   .stats-meta { font-size: 13px; color: #666; margin-bottom: 16px; }
-  .bar-row { margin-bottom: 10px; }
+  .bar-row { margin-bottom: 14px; }
   .bar-row .bar-label { font-size: 12px; color: #444; display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .bar-row .bar-desc { font-size: 11px; color: #888; margin: 4px 0 0; }
   .bar-track { background: var(--accent-light); border-radius: 6px; height: 10px; overflow: hidden; }
   .bar-fill { background: var(--accent); height: 100%; border-radius: 6px; transition: width .4s ease; }
   .bar-fill.me { background: var(--ink); }
@@ -225,12 +226,18 @@ function showResult(data) {
 function renderStats(stats, myCategory) {
   document.getElementById('statsMeta').textContent = `已有 ${stats.count} 人填寫，平均完美主義指數 ${toPercent(stats.average)}%`;
   const max = Math.max(1, ...stats.distribution.map(d => d.count));
-  document.getElementById('statsBars').innerHTML = stats.distribution.map(d => `
+  document.getElementById('statsBars').innerHTML = stats.distribution.map(d => {
+    const cat = CATEGORIES.find(c => c.name === d.name);
+    const range = cat ? `${cat.min} - ${cat.max} 分：` : '';
+    const desc = cat ? cat.desc : '';
+    return `
     <div class="bar-row">
       <div class="bar-label"><span>${d.name}${d.name === myCategory ? '（你在這裡）' : ''}</span><span>${d.count} 人</span></div>
       <div class="bar-track"><div class="bar-fill ${d.name === myCategory ? 'me' : ''}" style="width:${(d.count/max*100)}%"></div></div>
+      <p class="bar-desc">${range}${desc}</p>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 document.getElementById('refreshStats').addEventListener('click', async () => {

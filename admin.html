@@ -45,7 +45,14 @@
     border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; cursor: pointer;
   }
   .pct { font-family: "Space Mono", monospace; font-weight: 700; color: var(--accent); }
-  #meta { font-size: 13px; color: #666; margin-bottom: 16px; }
+  #meta { font-size: 13px; color: #666; margin-bottom: 20px; }
+  .chart-area { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+  .chart-box { flex: 0 0 200px; }
+  .legend-box { flex: 1; min-width: 200px; }
+  .leg-item { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px; }
+  .leg-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .leg-name { flex: 1; }
+  .leg-val { font-family: "Space Mono", monospace; font-weight: 700; color: var(--accent); font-size: 13px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -58,6 +65,14 @@
   <div class="card">
     <h2>填寫統計</h2>
     <div id="meta">載入中...</div>
+    <div class="chart-area">
+      <div class="chart-box">
+        <div style="position:relative;width:200px;height:200px;">
+          <canvas id="pieChart" role="img" aria-label="五大類型人數分布圓餅圖"></canvas>
+        </div>
+      </div>
+      <div class="legend-box" id="legendList"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -74,8 +89,10 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxh31qdUxajfxQZlVbX03Q0rcSoiHcSMI7oYz_bq0nPKPJ9XHSNLHW5njOEniEvu3IC/exec";
+const PALETTE = ["#534AB7", "#D85A30", "#1D9E75", "#BA7517", "#378ADD"];
 
 const CATEGORY_DETAIL = {
   "停滯不前的完美囚徒 🐢": { animal: "烏龜", detail: "常被選擇癱瘓困住，害怕失敗而乾脆不開始。書中提到，完美主義有時就像是「扛一副過重的盾牌而無法前進」；烏龜堅硬的外殼，正像是完美主義者為自己打造的「防空洞」。因為害怕一開始就失敗，或者過度思考導致選擇癱瘓，遇到挑戰的第一反應就是把頭縮回殼裡，留在舒適圈不冒險——而最糟糕的決定，往往就是「不行動」。" },
@@ -84,6 +101,8 @@ const CATEGORY_DETAIL = {
   "擁抱微小進步的實踐家 🐜": { animal: "勤奮的螞蟻", detail: "明白行動比停滯有力量，出錯時能較快調整步伐。螞蟻不會想著一次搬動整座大山，而是專注於眼前的碎屑，慢慢累積——這正呼應了「微習慣」的核心策略：把目標設定到小到不可能失敗（例如每天只做一個伏地挺身）。他們深知每一次的微小前進都算數，這些看似微不足道的行動，經過時間累積與複利效應，最終會滾出巨大的能量與實質的進展。" },
   "自由奔放的不完美主義者 🦮": { animal: "快樂的黃金獵犬", detail: "追求卓越但不強求完美，重視「去做」而不是「做好」。黃金獵犬為了接住飛盤，會毫不猶豫地撲進泥巴坑，牠們不在乎弄髒毛髮，只在乎享受遊戲的過程——這完美詮釋了「不完美主義就是自由」的心態。當注意力放在體驗與學習上時，壓力就會轉化為一種遊戲，他們把錯誤視為指南針，不怕犯錯，勇敢且自由地享受行動帶來的樂趣。" }
 };
+
+let pieChart = null;
 
 function fmtTime(iso) {
   const d = new Date(iso);
@@ -106,13 +125,14 @@ async function load() {
 function render(data) {
   const responses = data.responses || [];
   const categories = data.categories || [];
+  const total = responses.length;
 
-  if (responses.length === 0) {
+  if (total === 0) {
     document.getElementById('meta').textContent = '目前還沒有人填寫';
     document.getElementById('responseRows').innerHTML = '<tr><td colspan="3">目前還沒有資料</td></tr>';
   } else {
-    const avg = Math.round(responses.reduce((a, r) => a + r.pct, 0) / responses.length);
-    document.getElementById('meta').textContent = `共 ${responses.length} 人填寫，平均完美主義指數 ${avg}%`;
+    const avg = Math.round(responses.reduce((a, r) => a + r.pct, 0) / total);
+    document.getElementById('meta').textContent = `共 ${total} 人填寫，平均完美主義指數 ${avg}%`;
     document.getElementById('responseRows').innerHTML = responses.map(r => `
       <tr>
         <td>${fmtTime(r.timestamp)}</td>
@@ -122,15 +142,61 @@ function render(data) {
     `).join('');
   }
 
-  document.getElementById('categoryList').innerHTML = categories.map(c => {
+  const counts = categories.map(c => responses.filter(r => r.category === c.name).length);
+
+  document.getElementById('legendList').innerHTML = categories.map((c, i) => {
+    const pct = total ? Math.round(counts[i] / total * 100) : 0;
+    return `<div class="leg-item">
+      <div class="leg-dot" style="background:${PALETTE[i]}"></div>
+      <span class="leg-name">${c.name}</span>
+      <span class="leg-val">${counts[i]} 人${total ? ' · ' + pct + '%' : ''}</span>
+    </div>`;
+  }).join('');
+
+  const chartData = counts.map(n => n || 0.01);
+  const bgColors = counts.map((n, i) => n ? PALETTE[i] : 'transparent');
+  const bdColors = counts.map(n => n ? '#fff' : 'transparent');
+
+  if (pieChart) {
+    pieChart.data.datasets[0].data = chartData;
+    pieChart.data.datasets[0].backgroundColor = bgColors;
+    pieChart.data.datasets[0].borderColor = bdColors;
+    pieChart.update();
+  } else {
+    pieChart = new Chart(document.getElementById('pieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: categories.map(c => c.name),
+        datasets: [{ data: chartData, backgroundColor: bgColors, borderColor: bdColors, borderWidth: 2, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '48%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const n = counts[ctx.dataIndex];
+                if (!n) return ' 0 人';
+                return ` ${n} 人（${Math.round(n / total * 100)}%）`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  document.getElementById('categoryList').innerHTML = categories.map((c, i) => {
     const detail = CATEGORY_DETAIL[c.name];
-    return `
-    <div class="cat-row">
+    return `<div class="cat-row">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${PALETTE[i]};vertical-align:middle;margin-right:6px;"></span>
       <span class="name">${c.name}</span><span class="range">（${c.min}–${c.max} 分${detail ? '・代表動物：' + detail.animal : ''}）</span>
       <div class="desc">${c.desc}</div>
       ${detail ? `<div class="detail">${detail.detail}</div>` : ''}
-    </div>
-  `;
+    </div>`;
   }).join('');
 }
 
